@@ -53,9 +53,8 @@ int main(int argc, char *argv[]) {
 
   buMatrix loc = {0}, cpl = {0};
   comm *in = allocComm(), *out = allocComm();
-  setupMisG(part_scheme, &buMat, &loc, &cpl, in, out, MPI_COMM_WORLD); // I have no idea what this does but ehhhh.
+  setupMisG(part_scheme, &buMat, &loc, &cpl, in, out, MPI_COMM_WORLD);
 
-  // Would it kill to document your code?
   parMatrix A = {
     .loc=&loc,
     .cpl=&cpl,
