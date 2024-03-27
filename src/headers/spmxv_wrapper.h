@@ -16,3 +16,9 @@ void readMatrixFromCSC(CSC *Ain , buMatrix *Aout);
 /* Fills out buMatrix partition map using PaToH output.
  */
 void retrieveMatrixParts(buMatrix *A, int partScheme, int *inpartarr, int *outpartarr); 
+
+/*
+   modified verson of read matrix function to handle matrix market file  
+*/
+void readMatrixMarket(buMatrix *A, char *fname, int partScheme, char *inpartfname,
+                char *outpartfname) ;

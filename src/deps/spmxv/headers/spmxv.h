@@ -18,7 +18,7 @@ typedef enum {
 typedef struct{
   int *ia; 
   int *ja;
-  double *val;
+  double *val; 
   int n;        /*  number of cols, independent of storage scheme*/
   int m;        /*  number of rows, independent of storage scheme*/
   int nnz;

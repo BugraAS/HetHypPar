@@ -4,33 +4,32 @@
 #include "patoh.h"
 #include "stdio.h"
 #include <stdlib.h>
+#include <time.h> 
 
-CSC COO_to_CSC(COO *in){
-    CSC out = {
-        .I = (int *)malloc(sizeof(int) * in->nnz),
-        .J = (int *)malloc(sizeof(int) * (in->n + 1)),
-        .val = (double *)malloc(sizeof(double) * in->nnz),
-        .nnz=in->nnz,
-        .m=in->m,
-        .n=in->n
-    };
-    if (out.I == NULL || out.J == NULL || out.val == NULL){
-        return (CSC){0};
-    }
-    out.J[0] = 0;
+CSC COO_to_CSC(COO *in) {
+  CSC out = {.I = (int *)malloc(sizeof(int) * in->nnz),
+             .J = (int *)malloc(sizeof(int) * (in->n + 1)),
+             .val = (double *)malloc(sizeof(double) * in->nnz),
+             .nnz = in->nnz,
+             .m = in->m,
+             .n = in->n};
+  if (out.I == NULL || out.J == NULL || out.val == NULL) {
+    return (CSC){0};
+  }
+  out.J[0] = 0;
+  out.J[out.n] = out.nnz;
+  int i, col;
+  for (i = 0, col = 0; i < out.nnz; i++) {
+    if (in->J[i] != col)
+      out.J[col++ + 1] = i;
+    out.I[i] = in->I[i];
+    out.val[i] = in->val[i];
+  }
+  int last = out.J[out.n];
+  if (last != out.nnz) {
     out.J[out.n] = out.nnz;
-    int i, col;
-    for(i = 0, col = 0; i < out.nnz; i++){
-        if(in->J[i] != col)
-            out.J[col++ + 1] = i;
-        out.I[i] = in->I[i];
-        out.val[i] = in->val[i];
-    }
-    int last = out.J[out.n];
-    if (last != out.nnz){
-      out.J[out.n] = out.nnz;
-    }
-    return out;
+  }
+  return out;
 }
 
 CSC ReadSparseMatrix(char *fname) {
@@ -94,17 +93,52 @@ CSC ReadSparseMatrix(char *fname) {
   return cscmatrix;
 }
 
-int *CalcPartVec(int nparts,  CSC *cscmatrix) {
+static void nnzDistribution(int *cweights, int numpart, int nrow, int *partvec,char* resultFName) {
+
+  int nnzCount[numpart];
+  for (int i = 0; i < numpart; i++)
+    nnzCount[i] = 0;
+
+  for (int i = 0; i < nrow; i++) {
+
+    nnzCount[partvec[i]] += cweights[i];
+  }
+
+ //-----------------------Result file ----------------------------------   
+  FILE* fptr = fopen(resultFName,"a") ; 
+
+  if (fptr == NULL) {
+     printf("Result file cannot opened!!") ;
+     exit(-1) ;
+  }
+  else  {
+
+    time_t mytime;
+    mytime = time(NULL) ;
+    
+    fprintf(fptr,"%s\n",ctime(&mytime)) ;
+    fprintf(fptr,"Number of Non-zero Count : \n") ;
+    for (int i = 0; i < numpart; i++) {
+        printf("[%d] %d ", i, nnzCount[i]);
+        fprintf(fptr," [%d] : %d ",i,nnzCount[i]) ;
+    }
+  }
+  fclose(fptr) ;
+  //--------------------- Ending Result file -----------------------------
+  printf("\n");
+}
+
+int *CalcPartVec(int nparts, CSC *cscmatrix,char * fName, double final_imbal, int seed , char* resultFName) {
+
   CSR csrmatrix = {};
   if ((csrmatrix = CSC_to_CSR(cscmatrix)).nnz == 0)
     exit(EXIT_FAILURE);
 
-  CSC csctmatrix = SparseTranspose(*cscmatrix);
+  CSC csctmatrix = SparseTranspose(*cscmatrix); /* test needed */
   int *cweights = CalcWeights(&csctmatrix);
 
-
   // PATOH STARTS HERE
-  // ============================================================================================
+  // =========================================================================================================
 
   int nweights[csrmatrix.n];
   for (int i = 0; i < csrmatrix.n; i++)
@@ -113,17 +147,63 @@ int *CalcPartVec(int nparts,  CSC *cscmatrix) {
   PaToH_Parameters args = {0};
   PaToH_Initialize_Parameters(&args, PATOH_CONPART, PATOH_SUGPARAM_DEFAULT);
   args._k = nparts;
+  
+  // =========================================================================================================
+  // Final imbalance and counstant seed  
+  args.final_imbal = final_imbal ; 
+  args.seed = seed ;
+  // =========================================================================================================
 
   int *partvec =
       malloc(sizeof(int) * csrmatrix.n); // contains the resulting partition
-  int partweights[args._k];            // contains the weights of the partition
+  int partweights[args._k]; // contains the weights of the partition
   int cut;
 
-  PaToH_Alloc(&args, csrmatrix.n, csrmatrix.m, 1, cweights, nweights, csrmatrix.I,
-              csrmatrix.J);
+  float targetweigths[nparts] ; 
 
-  PaToH_Part(&args, csrmatrix.n, csrmatrix.m, 1, 0, cweights, nweights, csrmatrix.I,
-             csrmatrix.J, NULL, partvec, partweights, &cut);
+
+  // Open a file in read mode
+  FILE *fptr;
+  if((fptr = fopen(fName, "r")) == NULL) {
+    fprintf(stderr, "file can't be opened %s file \n",fName) ;
+    exit(-1) ;
+  }
+  
+  int i=0 ;
+  while (fscanf(fptr, "%f ",targetweigths + i++)  == 1) ;
+        
+  fclose(fptr) ;
+  
+  
+  PaToH_Alloc(&args, csrmatrix.n, csrmatrix.m, 1, cweights, nweights,
+              csrmatrix.I, csrmatrix.J);
+
+  PaToH_Part(&args, csrmatrix.n, csrmatrix.m, 1, 0, cweights, nweights,
+             csrmatrix.I, csrmatrix.J, targetweigths, partvec, partweights,
+             &cut);
+
+  nnzDistribution(cweights, nparts, cscmatrix->m, partvec,resultFName); // print nnz per part 
+                                                        
+  
+  
+  printf("cut : %d",cut) ;
+  
+  // --------------------------- open result file for write cut size -----------------------
+   FILE* file = fopen(resultFName,"a") ; 
+
+  if (file == NULL) {
+     printf("Result file cannot opened!!") ;
+     exit(-1) ;
+  }
+  else  {
+    fprintf(file,"\n\ncut  : %d \n",cut) ;
+  }
+  fclose(file) ; 
+   
+  // --------------------------- closing file ---------------------------------------------- 
+
+
+
 
   free(cweights);
   freeSparseMatrix(&csrmatrix);

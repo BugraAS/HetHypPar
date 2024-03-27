@@ -51,3 +51,12 @@ Module.symvers
 Mkfile.old
 dkms.conf
 build/*
+results
+parts
+output
+benchmark*.txt
+compile
+mxv-results
+.cache
+compile_commands.json
+

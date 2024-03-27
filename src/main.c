@@ -10,47 +10,34 @@
 
 #define WRITE_PARTVEC 0 
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) { 
+
   MPI_Init(&argc, &argv);
   int myId;
   int numProcs;
-
-  spmxv_const part_scheme = PART_BY_ROWS;
+  double start ; // start time 
+  
+  spmxv_const part_scheme = PART_BY_ROWS;  // Bora hocanın kodu   (spmxv) 
 
   MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
   MPI_Comm_rank(MPI_COMM_WORLD, &myId);
-
+  
   if (argc < 4) {
-    fprintf(stderr, "Usage: %s [martix-market-filename] [number-of-parts] [number-of-iterations]\n",
-            argv[0]);
+    fprintf(stderr, "Usage: %s [martix-market-filename] [part-vector-file] [number-of-iterations]\n", argv[0]);
     MPI_Finalize();
     exit(1);
   }
-  int numparts = atoi(argv[2]);
+
   int numiters = atoi(argv[3]);
-  CSC cscmatrix = {0};
-  int *partvec = NULL;
-  if (myId == 0) {
-    cscmatrix = ReadSparseMatrix(argv[1]);
-    partvec = CalcPartVec(numparts, &cscmatrix);
-  }
- 
+
+  
   initParLib(MPI_COMM_WORLD);
 
   buMatrix buMat = {0};
 
-  if(!WRITE_PARTVEC)
-    distributeMatrix(&buMat, &cscmatrix, part_scheme, partvec);
-  else{
-    if(myId==0){
-     FILE *fptr = fopen("partvec.txt", "w");
-      for(size_t i = 0; i < cscmatrix.n; i++)
-        fprintf(fptr, "%d\n", partvec[i]);
-      fclose(fptr);
-    }
-    readMatrix(&buMat, "matrices/butub1000.mtx", part_scheme, "partvec.txt", "partvec.txt");
-  }
+  readMatrixMarket(&buMat, argv[1], part_scheme, argv[2], argv[2]);
 
+  MPI_Barrier(MPI_COMM_WORLD) ;
   buMatrix loc = {0}, cpl = {0};
   comm *in = allocComm(), *out = allocComm();
   setupMisG(part_scheme, &buMat, &loc, &cpl, in, out, MPI_COMM_WORLD);
@@ -81,12 +68,21 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < x->sz; i++)
       x->val[i] = myId + 1;
   }
-
+  MPI_Barrier(MPI_COMM_WORLD) ; 
+  start = MPI_Wtime() ;
   for (int i = 0; i < numiters; i++) {
     for (int jb = 0; jb < b->sz; jb++)
       b->val[jb] = 0.0;
     mxv(&A, x, b, MPI_COMM_WORLD);
   }
+
+  double elapsedTime =  MPI_Wtime()-start ;
+  double finalTime = 0.0 ;
+
+  MPI_Reduce(&elapsedTime, &finalTime, 1 , MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD) ;
+  
+  if (myId == 0) 
+     printf("%s RANK : %d   MxV : %lf\n",argv[2], myId , finalTime ) ; 
 
   freeMatrix(&buMat);
   freeMatrix(&loc);
@@ -97,6 +93,8 @@ int main(int argc, char *argv[]) {
   freeComm(in);
 
   quitParLib(MPI_COMM_WORLD);
+
+
   MPI_Finalize();
   return 0;
 }
