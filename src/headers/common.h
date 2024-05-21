@@ -4,12 +4,12 @@
 
 // Column sorted Coordinate.
 typedef struct {
-    int* I; // Row index
-    int* J; // Column index
-    double* val; // value
-    int nnz; // number of non-zeros
-    int m; // number of rows
-    int n; // number of columns
+    int* I;                     // Row index
+    int* J;                     // Column index
+    double* val;                // value
+    int nnz;                    // number of non-zeros
+    int m;                      // number of rows
+    int n;                      // number of columns
 } COO;
 
 // Compressed Sparse Row.
@@ -20,10 +20,17 @@ typedef COO CSR;
 // .J contains the compressed index.
 typedef COO CSC;
 
+// Simplifying assumptions: 1.) Assume split is row-wise  2.) Assume there will be no more than 2 splits
+typedef struct{
+    CSR loc;                // Local Matrix
+    CSR shr;                // Shared Matrix (needs communication to complete)
+    int* locp;              // Column Permutation Vector of local matrix
+    int* shrp;              // Column Permutation Vector of shared matrix
+} SPLIT_CSR;
 
 //Note that this function allocates memory.
 //It can be freed using freeSparseMatrix.
-static inline CSR CSC_to_CSR(CSC *in){
+static inline CSR CSC_to_CSR(CSC *in){   // duzelt ??? 
     CSC out = {
         .I = (int *)malloc(sizeof(int) * (in->m + 1)),
         .J = (int *)malloc(sizeof(int) * in->nnz),
@@ -79,3 +86,9 @@ static inline void freeSparseMatrix(COO *in){
     free(in->J);
     free(in->val);
 }
+
+static inline void freeSplit_CSR(SPLIT_CSR *in) {
+
+    free(in->locp) ;
+    free(in->shrp) ;
+ }

@@ -1,0 +1,4 @@
+{
+  "cmake.generator": "Ninja",
+  "cmake.mergedCompileCommands": "${workspaceFolder}/compile_commands.json"
+}

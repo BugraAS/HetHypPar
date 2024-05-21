@@ -15,9 +15,19 @@ arr = ['pre2', 'twotone', 'hcircuit', 'scircuit', 'xenon2', 'lung2', 'stomach', 
       # 'rajat31','memchip','FullChip', 'Freescale2', 'Freescale1', 'circuit5M_dc', 'patents_main',
 
 
-arr_var = ['_16k_s1_b0_i1','_16k_s1_b1_i1','_16k_s1_b2_i1']  
+arr_var =   ['_16k_s1_b0_i1']  #['_16k_s1_b0_i1','_16k_s1_b1_i1','_16k_s1_b2_i1']  
 
 for i in arr: 
     for j in arr_var:
-       exit_status = os.system(f"mpirun --map-by core -np 16 ../build/src/inner ../matrices/{i}.mtx  ../parts/{i}{j}  1000 >> output3.txt") ;
+       exit_status = os.system(f"mpirun --map-by core -np 16 ../build/src/inner ../matrices/{i}.mtx  ../parts/{i}{j}  1 >> output_spring2.txt") 
 
+
+spmvx_time = 0 
+with open('output_spring.txt','r') as f : 
+   for line in f:
+        if '../parts/' in line:
+            time_str = line.split(':')[2].strip()    
+            if time_str:  
+                spmvx_time += float(time_str)  
+           
+print("Total SpMVX time:", spmvx_time)

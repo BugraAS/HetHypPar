@@ -1,0 +1,48 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "by-gdb",
+            "request": "launch",
+            "name": "Launch(gdb)",
+            "program": "src/mxv-gpu",
+            "programArgs": " ../matrices/hvdc2.mtx ../parts-gpu/hvdc2_2k_s1_gpu_i1",
+            "cwd": "${workspaceRoot}/build"
+        },
+        {
+            "name": "(gdb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/build/src/mxv-gpu",
+            "args": ["../matrices/hvdc2.mtx","../parts-gpu/hvdc2_2k_s1_gpu_i1"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}/build",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "type": "by-gdb",
+            "request": "launch",
+            "name": "mxv-gpu",
+            "program": "src/mxv-gpu",
+            "programArgs": " ../matrices/hvdc2.mtx ../parts-gpu/hvdc2_2k_s1_gpu_i1",
+            "cwd": "${workspaceRoot}/build"
+        }
+    ]
+}

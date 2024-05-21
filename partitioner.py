@@ -2,7 +2,7 @@ import os
 from joblib import Parallel, delayed
 import datetime
 
-os.chdir("parts") 
+os.chdir("parts-gpu") 
 
 def part_process(i, key, val): 
    
@@ -12,7 +12,7 @@ def part_process(i, key, val):
    f.write(f"../matrices/{i}.mtx") 
    
    
-   exit_status = os.system(f"../build/src/patpart ../matrices/{i}.mtx 16 ../{key} 1 1 {i}{val} ../results/{i}{val}") 
+   exit_status = os.system(f"../build/src/patpart ../matrices/{i}.mtx 2 ../{key} 1 1 {i}{val} ../results-gpu/{i}{val}") 
 
 
    if exit_status == 0:
@@ -32,10 +32,10 @@ arr = ['cage14', 'Transport', 'nv2', 'dgreen',   'ss', 'vas_stokes_1M', 'pre2', 
        'rajat30',  'ASIC_320k', 'ASIC_320ks','ASIC_680k', 'ASIC_680ks',  'FEM_3D_thermal2', 'Baumann', 'crashbasis', 'majorbasis','Raj1', 
        'hvdc2', 'largebasis', 'tmt_unsym', 'thermomech_dK', 'atmosmodd', 'atmosmodj','atmosmodl','transient', 'PR02R', 'RM07R', 
        'mac_econ_fwd500', 'webbase-1M','CoupCons3D', 'ML_Laplace','power197k', 'Goodwin_095', 'Goodwin_127','imagesensor', 'power9', 
-       'radiation', 'test1','ss1', 'nxp1', 'marine1']    
+       'radiation', 'test1','ss1', 'nxp1', 'marine1']   
 
-
-dict = {'benchmark0.txt':'_16k_s1_b0_i1','benchmark1.txt':'_16k_s1_b1_i1','benchmark2.txt':'_16k_s1_b2_i1'}
+print(len(arr))
+dict = {'benchmark-gpu.txt':'_2k_s1_gpu_i1'}  #{'benchmark0.txt':'_16k_s1_b0_i1','benchmark1.txt':'_16k_s1_b1_i1','benchmark2.txt':'_16k_s1_b2_i1'}
 
 Parallel(n_jobs=16)( delayed(part_process)(i,key,val) for key, val in dict.items() for i in arr  ) 
      

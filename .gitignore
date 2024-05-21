@@ -60,3 +60,8 @@ mxv-results
 .cache
 compile_commands.json
 
+/parts-gpu
+/results-gpu
+/partsOf5Matrices
+/resultsOf5Matrices
+/mxv-resultsOf5Matrices

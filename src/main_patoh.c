@@ -1,4 +1,3 @@
-
 #include "common.h"
 #include "deps/spmxv/headers/spmxv.h"
 #include "mpi.h"
@@ -19,16 +18,19 @@ int main(int argc, char *argv[]) {
             argv[0]);
     exit(1);
   }
-   
+   printf("file : %s part : %d ",argv[1],atoi(argv[2])) ;
   int numparts = atoi(argv[2]);
 
-  CSC cscmatrix = {0};
+  CSC cscmatrix = {0}; 
 
   int *partvec = NULL;
 
   double start = MPI_Wtime();
   cscmatrix = ReadSparseMatrix(argv[1]);
   printf("Reading File : %lf\n", MPI_Wtime() - start);
+
+  printf("---------------------------------------------------------------------\n") ;
+ 
 
   start = MPI_Wtime();
   partvec = CalcPartVec(numparts, &cscmatrix,argv[3], atoi(argv[4])/100. , atoi(argv[5]), argv[7]);
@@ -56,7 +58,7 @@ int main(int argc, char *argv[]) {
   else {
   fprintf(fptr2,"\nPart Vector : \n") ;
   for (int i = 0; i < numparts; i++) {
-    printf("i : %d ", vec[i]);
+    printf("%d : %d ",i,  vec[i]);
     fprintf(fptr2," [%d] : %d",i,vec[i]) ;
   }
   }
@@ -65,6 +67,6 @@ int main(int argc, char *argv[]) {
 
   freeSparseMatrix(&cscmatrix) ; 
   free(partvec) ;
-  
+   
   return 0;
 }
